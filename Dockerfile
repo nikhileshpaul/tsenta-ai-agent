@@ -7,7 +7,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm install --no-audit --no-fund
 
 # Step 2: Build application
 FROM base AS builder

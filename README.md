@@ -1,6 +1,6 @@
-# Tsenta AI — Standalone Autonomous Job Application Agent
+# JobPulse AI — Autonomous Job Application Agent
 
-A containerized clone of the **Tsenta AI Job Application Agent**, built with Next.js 14+ (App Router), TypeScript, Tailwind CSS, Lucide Icons, and Zustand with local storage persistence.
+A containerized autonomous AI Job Hunting Agent backed by **PostgreSQL 16**, built with Next.js 14+ (App Router), TypeScript, Tailwind CSS, Lucide Icons, and Zustand.
 
 ---
 
@@ -12,30 +12,38 @@ A containerized clone of the **Tsenta AI Job Application Agent**, built with Nex
    - Autonomous Auto-Pilot loop toggle, instant cycle execution trigger, and tuning sliders.
 
 2. **Requisition Radar & Signature Tailored Redline Diff**
-   - 15 realistic pre-seeded job postings (Stripe, Airbnb, Vercel, Supabase, Datadog, Anthropic, Figma, Linear, Ramp, Cloudflare, OpenAI, Retool, GitHub, PostHog, Vanta).
+   - 15 realistic pre-seeded job postings (Stripe, Airbnb, Vercel, Supabase, Datadog, Anthropic, Figma, Linear, Ramp, Cloudflare, OpenAI, Retool, GitHub, PostHog, Vanta) stored in PostgreSQL.
    - Real-time ATS match scoring with matched and missing skill indicators.
    - **Signature Redline Resume Diff**: Side-by-side or unified comparison showing additions (`+` in green), deletions (`-` in red), and ATS score gains (e.g. +18% improvement).
    - AI Cover Letter generator with copy-to-clipboard functionality.
 
 3. **Applications Pipeline (Kanban & Table)**
    - 6-stage lifecycle tracking: `Discovered` → `Tailoring` → `Applied` → `Interviewing` → `Offer` → `Rejected`.
-   - Interactive stage advancing/rewinding.
+   - Interactive stage advancing/rewinding with real-time PostgreSQL database synchronization.
    - Comprehensive detail modal with event timeline, interview rounds, offer packages, and recruiter notes.
    - Toggleable between Kanban Board and searchable/sortable Data Table.
 
 4. **Master Candidate Profile & Skills Taxonomy**
-   - Editable candidate profile with quantified achievements.
+   - Editable candidate profile with quantified achievements stored in PostgreSQL relational tables.
    - Categorized skills matrix (Languages, Frontend, Distributed Systems, Cloud/DevOps) with interactive tag additions and deletions.
 
-5. **Agent Orchestration Settings & Diagnostics**
-   - Tunable match thresholds, daily dispatch limits, AI persona tone options, and blacklists.
-   - Docker container health diagnostics and factory state reset.
+5. **Authentication & User Management**
+   - User Registration and Login mechanisms with password hashing via `bcryptjs` and session tokens.
+   - Pre-seeded demo account:
+     - **Email**: `alex.rivera@systems.dev`
+     - **Password**: `password123`
+   - Easy switching between demo profile and newly registered accounts.
+
+6. **PostgreSQL Relational Architecture**
+   - Managed `postgres:16-alpine` service in Docker Compose.
+   - Automatic database schema initialization and pre-seeding via `init.sql`.
+   - Dedicated persistent volume (`postgres_data`).
 
 ---
 
 ## Running with Docker Compose (Recommended)
 
-To run the application inside a multi-stage, standalone production container:
+To launch the full stack (Next.js Standalone + PostgreSQL 16):
 
 ```bash
 docker compose up --build -d
@@ -43,23 +51,20 @@ docker compose up --build -d
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-To stop the container:
+To view logs:
+```bash
+docker compose logs -f
+```
+
+To stop all containers:
 ```bash
 docker compose down
 ```
 
 ---
 
-## Local Development (Without Docker)
+## Credentials (Out-of-the-Box Demo)
 
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Production build test
-npm run build
-npm run start
-```
+- **Demo Email**: `alex.rivera@systems.dev`
+- **Demo Password**: `password123`
+- Or click **Sign In / Register** in the top-right header to create a new profile!

@@ -6,9 +6,9 @@ import { Shell } from '@/components/layout/Shell';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Tsenta AI — Autonomous Job Application Agent',
+  title: 'JobPulse AI — Autonomous Job Application Agent',
   description:
-    'Containerized AI Job Hunting Agent. Automatic job scraping, intelligent ATS matching, tailored resume redline diffs, and autonomous dispatching.',
+    'Containerized AI Job Hunting Agent. Automatic job scraping, intelligent ATS matching, tailored resume redline diffs, and autonomous dispatching backed by PostgreSQL.',
 };
 
 export default function RootLayout({

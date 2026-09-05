@@ -35,6 +35,9 @@ interface AgentState {
   selectedApplication: Application | null;
 
   // Actions
+  setUser: (user: User) => void;
+  loadUserSession: (user: User) => Promise<void>;
+  logoutUser: () => Promise<void>;
   setAgentStatus: (status: AgentStatus) => void;
   toggleAutonomousMode: () => void;
   runAgentCycle: () => Promise<void>;
@@ -66,15 +69,115 @@ export const useAgentStore = create<AgentState>()(
       selectedJobForDiff: null,
       selectedApplication: null,
 
+      setUser: (user) => set({ user }),
+
+      loadUserSession: async (user: User) => {
+        set({ user });
+
+        const isDemo = user.email === 'alex.rivera@systems.dev' || user.id === 'usr-001';
+
+        if (!isDemo) {
+          // Fresh user: reset all previous applications, logs, and job statuses immediately!
+          set({
+            applications: [],
+            agentLogs: [
+              {
+                id: `log-${Date.now()}`,
+                timestamp: new Date().toTimeString().split(' ')[0],
+                level: 'info',
+                message: `JobPulse AI initialized for ${user.name}. Pipeline is fresh and ready for auto-pilot.`,
+                actionType: 'scan',
+              },
+            ],
+            jobs: get().jobs.map((j) => ({ ...j, status: 'new' })),
+            profile: {
+              ...initialMasterProfile,
+              name: user.name,
+              email: user.email,
+              headline: `${user.title || 'Software Engineer'} | Systems & Web Platforms`,
+              summary: `Experienced engineering professional specializing in high-impact software development, modern platforms, and distributed systems.`,
+              experiences: [],
+            },
+          });
+        }
+
+        // Fetch user's data from PostgreSQL API
+        try {
+          const [appsRes, profileRes, settingsRes, logsRes] = await Promise.all([
+            fetch('/api/applications').then((r) => (r.ok ? r.json() : null)),
+            fetch('/api/profile').then((r) => (r.ok ? r.json() : null)),
+            fetch('/api/settings').then((r) => (r.ok ? r.json() : null)),
+            fetch('/api/agent/logs').then((r) => (r.ok ? r.json() : null)),
+          ]);
+
+          if (appsRes?.applications) {
+            set({ applications: appsRes.applications });
+          } else if (!isDemo) {
+            set({ applications: [] });
+          }
+
+          if (profileRes?.profile) {
+            set({ profile: profileRes.profile });
+          }
+
+          if (settingsRes?.settings) {
+            set({ settings: settingsRes.settings });
+          }
+
+          if (logsRes?.logs && logsRes.logs.length > 0) {
+            set({ agentLogs: logsRes.logs });
+          }
+        } catch (err) {
+          console.error('Error fetching user data from PostgreSQL:', err);
+        }
+      },
+
+      logoutUser: async () => {
+        try {
+          await fetch('/api/auth/logout', { method: 'POST' });
+        } catch {}
+
+        set({
+          user: {
+            id: 'usr-guest',
+            name: 'Guest Explorer',
+            email: 'guest@jobpulse.dev',
+            avatarUrl:
+              'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+            title: 'Visiting Engineer',
+          },
+          applications: [],
+          agentLogs: [],
+          jobs: get().jobs.map((j) => ({ ...j, status: 'new' })),
+          profile: {
+            ...initialMasterProfile,
+            name: 'Guest Explorer',
+            email: 'guest@jobpulse.dev',
+            headline: 'Software Engineer',
+            summary: 'Log in or create an account to start your automated job hunting pipeline.',
+            experiences: [],
+          },
+        });
+      },
+
       setAgentStatus: (status) => set({ agentStatus: status }),
 
       toggleAutonomousMode: () => {
         const current = get().settings.autonomousMode;
         const newStatus: AgentStatus = !current ? 'idle' : 'paused';
-        set((state) => ({
-          settings: { ...state.settings, autonomousMode: !current },
+        const newSettings = { ...get().settings, autonomousMode: !current };
+        set({
+          settings: newSettings,
           agentStatus: newStatus,
-        }));
+        });
+
+        // Sync to Postgres API
+        fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newSettings),
+        }).catch(() => {});
+
         get().addLog({
           level: !current ? 'info' : 'warning',
           message: !current
@@ -95,7 +198,7 @@ export const useAgentStore = create<AgentState>()(
           actionType,
         };
         set((state) => ({
-          agentLogs: [newLog, ...state.agentLogs].slice(0, 100), // retain last 100 logs
+          agentLogs: [newLog, ...state.agentLogs].slice(0, 100),
         }));
       },
 
@@ -109,15 +212,19 @@ export const useAgentStore = create<AgentState>()(
           actionType: 'scan',
         });
 
-        // Step 1: Scan
+        // Call Postgres API cycle endpoint
+        try {
+          fetch('/api/agent/cycle', { method: 'POST' }).catch(() => {});
+        } catch {}
+
         await new Promise((res) => setTimeout(res, 800));
 
-        // Find an unapplied job meeting the threshold
+        // Find candidate job
         const state = get();
         const threshold = state.settings.matchThreshold;
-        const candidateJob = state.jobs.find(
-          (j) => j.status !== 'applied' && j.matchScore >= threshold
-        ) || state.jobs[0];
+        const candidateJob =
+          state.jobs.find((j) => j.status !== 'applied' && j.matchScore >= threshold) ||
+          state.jobs[0];
 
         if (!candidateJob) {
           get().addLog({
@@ -136,7 +243,7 @@ export const useAgentStore = create<AgentState>()(
           actionType: 'match',
         });
 
-        // Step 2: Tailor
+        // Tailor
         set({ agentStatus: 'tailoring' });
         await new Promise((res) => setTimeout(res, 1200));
 
@@ -184,7 +291,7 @@ export const useAgentStore = create<AgentState>()(
           actionType: 'tailor',
         });
 
-        // Step 3: Apply
+        // Apply
         set({ agentStatus: 'applying' });
         await new Promise((res) => setTimeout(res, 1000));
 
@@ -200,7 +307,7 @@ export const useAgentStore = create<AgentState>()(
           appliedDate: new Date().toISOString().split('T')[0],
           matchScore: candidateJob.matchScore,
           tailoredDiffId: diffId,
-          notes: `Automated submission generated via Tsenta AI agent (Model: ${state.settings.aiModel}).`,
+          notes: `Automated submission generated via JobPulse AI agent (Model: ${state.settings.aiModel}).`,
           timeline: [
             {
               stage: 'discovered',
@@ -220,7 +327,13 @@ export const useAgentStore = create<AgentState>()(
           ],
         };
 
-        // Update Job and Application state
+        // Sync with Postgres API
+        fetch('/api/applications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newApp),
+        }).catch(() => {});
+
         set((s) => ({
           jobs: s.jobs.map((j) => (j.id === candidateJob.id ? { ...j, status: 'applied' } : j)),
           applications: [newApp, ...s.applications.filter((a) => a.jobId !== candidateJob.id)],
@@ -249,6 +362,13 @@ export const useAgentStore = create<AgentState>()(
           },
         ];
 
+        // Sync with Postgres
+        fetch('/api/applications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: appId, stage: newStage, timeline: updatedTimeline }),
+        }).catch(() => {});
+
         set((state) => ({
           applications: state.applications.map((a) =>
             a.id === appId ? { ...a, stage: newStage, timeline: updatedTimeline } : a
@@ -262,6 +382,13 @@ export const useAgentStore = create<AgentState>()(
       },
 
       updateApplicationNotes: (appId, notes) => {
+        // Sync with Postgres
+        fetch('/api/applications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: appId, notes }),
+        }).catch(() => {});
+
         set((state) => ({
           applications: state.applications.map((a) => (a.id === appId ? { ...a, notes } : a)),
         }));
@@ -330,7 +457,7 @@ export const useAgentStore = create<AgentState>()(
           appliedDate: new Date().toISOString().split('T')[0],
           matchScore: job.matchScore,
           tailoredDiffId: diffId,
-          notes: 'Manually triggered tailored application via Tsenta console.',
+          notes: 'Manually triggered tailored application via JobPulse console.',
           timeline: [
             {
               stage: 'discovered',
@@ -344,6 +471,13 @@ export const useAgentStore = create<AgentState>()(
             },
           ],
         };
+
+        // Sync with Postgres API
+        fetch('/api/applications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newApp),
+        }).catch(() => {});
 
         set((s) => ({
           jobs: s.jobs.map((j) => (j.id === jobId ? { ...j, status: 'applied' } : j)),
@@ -359,6 +493,13 @@ export const useAgentStore = create<AgentState>()(
       },
 
       updateProfile: (newProfile) => {
+        // Sync with Postgres API
+        fetch('/api/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newProfile),
+        }).catch(() => {});
+
         set((state) => ({
           profile: { ...state.profile, ...newProfile },
         }));
@@ -369,6 +510,13 @@ export const useAgentStore = create<AgentState>()(
       },
 
       updateSettings: (newSettings) => {
+        // Sync with Postgres API
+        fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newSettings),
+        }).catch(() => {});
+
         set((state) => ({
           settings: { ...state.settings, ...newSettings },
         }));
@@ -378,7 +526,11 @@ export const useAgentStore = create<AgentState>()(
         });
       },
 
-      clearLogs: () => set({ agentLogs: [] }),
+      clearLogs: () => {
+        fetch('/api/agent/logs', { method: 'DELETE' }).catch(() => {});
+        set({ agentLogs: [] });
+      },
+
       setSelectedJobForDiff: (diff) => set({ selectedJobForDiff: diff }),
       setSelectedApplication: (app) => set({ selectedApplication: app }),
 
@@ -403,7 +555,7 @@ export const useAgentStore = create<AgentState>()(
       },
     }),
     {
-      name: 'tsenta-ai-agent-v1',
+      name: 'jobpulse-ai-agent-v1',
       partialize: (state) => ({
         user: state.user,
         profile: state.profile,

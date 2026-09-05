@@ -48,7 +48,7 @@ export function MasterProfileForm() {
             Candidate Knowledge Graph & Master Profile
           </h2>
           <p className="text-xs text-slate-400">
-            The canonical source material referenced by Tsenta AI during resume synthesis.
+            The canonical source material referenced by JobPulse AI during resume synthesis.
           </p>
         </div>
 

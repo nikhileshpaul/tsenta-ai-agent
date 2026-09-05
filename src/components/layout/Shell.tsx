@@ -6,11 +6,23 @@ import { Sidebar } from './Sidebar';
 import { TailoredRedlineDiffModal } from '@/components/jobs/TailoredRedlineDiffModal';
 import { ApplicationModal } from '@/components/applications/ApplicationModal';
 
+import { useAgentStore } from '@/store/useAgentStore';
+
 export function Shell({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
+  const { loadUserSession, user } = useAgentStore();
 
   useEffect(() => {
     setMounted(true);
+    // Sync session on mount
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) {
+          loadUserSession(data.user);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   if (!mounted) {
@@ -19,7 +31,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent" />
           <span className="text-xs text-slate-400 font-mono tracking-wider">
-            INITIALIZING TSENTA AGENT CONSOLE...
+            INITIALIZING JOBPULSE AGENT CONSOLE...
           </span>
         </div>
       </div>

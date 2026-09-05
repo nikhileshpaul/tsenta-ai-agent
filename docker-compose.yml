@@ -1,19 +1,46 @@
 services:
-  tsenta-agent:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jobpulse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: jobpulse
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d jobpulse"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  jobpulse-agent:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: tsenta-ai-agent
+    container_name: jobpulse-agent
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
+      - DATABASE_URL=postgresql://postgres:postgrespassword@postgres:5432/jobpulse
+      - JWT_SECRET=supersecret-jobpulse-jwt-key-2026
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000"]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 5s
+
+volumes:
+  postgres_data:

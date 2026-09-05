@@ -60,10 +60,10 @@ export function DockerHealthCard() {
         <div className="p-3.5 rounded-xl border border-surface-border bg-surface-subtle space-y-1">
           <div className="flex items-center gap-1.5 text-slate-400">
             <Cpu className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-[10px] uppercase">Service Name</span>
+            <span className="text-[10px] uppercase">Services</span>
           </div>
-          <div className="text-white font-bold">tsenta-ai-agent</div>
-          <div className="text-[10px] text-slate-500">Docker Compose v2+ ready</div>
+          <div className="text-white font-bold">Web + PostgreSQL 16</div>
+          <div className="text-[10px] text-slate-500">jobpulse-agent & postgres</div>
         </div>
       </div>
 

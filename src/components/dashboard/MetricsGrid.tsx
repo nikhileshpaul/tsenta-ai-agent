@@ -23,16 +23,16 @@ export function MetricsGrid() {
 
   const avgMatchRate =
     applications.length > 0
-      ? Math.round(
+      ? `${Math.round(
           applications.reduce((acc, curr) => acc + curr.matchScore, 0) / applications.length
-        )
-      : 92;
+        )}%`
+      : '—';
 
   const metrics = [
     {
       title: 'Discovered Requisitions',
       value: totalJobs,
-      delta: '+12 today',
+      delta: `${totalJobs} total positions`,
       icon: Briefcase,
       color: 'text-cyan-400',
       bgColor: 'bg-cyan-500/10 border-cyan-500/20',
@@ -40,15 +40,18 @@ export function MetricsGrid() {
     {
       title: 'Applications Dispatched',
       value: appliedCount,
-      delta: '80% autonomous',
+      delta:
+        appliedCount > 0
+          ? `${Math.round((appliedCount / applications.length) * 100)}% autonomous`
+          : 'Ready to launch cycle',
       icon: Send,
       color: 'text-brand-400',
       bgColor: 'bg-brand-500/10 border-brand-500/20',
     },
     {
       title: 'Avg ATS Match Fit',
-      value: `${avgMatchRate}%`,
-      delta: '+18% with tailoring',
+      value: avgMatchRate,
+      delta: applications.length > 0 ? '+18% with tailoring' : 'Awaiting first application',
       icon: Target,
       color: 'text-emerald-400',
       bgColor: 'bg-emerald-500/10 border-emerald-500/20',
@@ -56,7 +59,10 @@ export function MetricsGrid() {
     {
       title: 'Active Interviews',
       value: interviewingCount,
-      delta: 'Anthropic & Vercel',
+      delta:
+        interviewingCount > 0
+          ? `${interviewingCount} scheduled round${interviewingCount > 1 ? 's' : ''}`
+          : 'None scheduled',
       icon: Users,
       color: 'text-indigo-400',
       bgColor: 'bg-indigo-500/10 border-indigo-500/20',
@@ -64,7 +70,10 @@ export function MetricsGrid() {
     {
       title: 'Offers Secured',
       value: offersCount,
-      delta: 'Linear ($265K Base)',
+      delta:
+        offersCount > 0
+          ? `${offersCount} package${offersCount > 1 ? 's' : ''} extended`
+          : 'None received',
       icon: Award,
       color: 'text-amber-400',
       bgColor: 'bg-amber-500/10 border-amber-500/20',

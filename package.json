@@ -1,5 +1,5 @@
 {
-  "name": "tsenta-ai-agent",
+  "name": "jobpulse-ai-agent",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,16 +9,22 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.441.0",
     "next": "14.2.23",
+    "pg": "^8.13.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.5.2",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.16.5",
+    "@types/pg": "^8.11.10",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.20",

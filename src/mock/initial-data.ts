@@ -740,7 +740,7 @@ export const initialAgentLogs: AgentLog[] = [
     id: 'log-01',
     timestamp: '23:40:12',
     level: 'info',
-    message: 'Tsenta autonomous scheduler daemon initialized. Checking active scrape targets...',
+    message: 'JobPulse autonomous scheduler daemon initialized. Checking active scrape targets...',
     actionType: 'scan',
   },
   {

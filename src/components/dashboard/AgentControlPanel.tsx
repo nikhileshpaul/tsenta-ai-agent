@@ -51,11 +51,11 @@ export function AgentControlPanel() {
               <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
                 Agent Orchestration Matrix
                 <span className="text-xs font-mono font-normal text-slate-400">
-                  [Daemon: tsenta-worker-01]
+                  [Daemon: jobpulse-worker-01]
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                Self-directing pipeline that continuously queries target boards, generates tailored resumes, and submits applications.
+                Self-directing pipeline that continuously queries target boards, generates tailored resumes, and submits applications via PostgreSQL pipeline.
               </p>
             </div>
           </div>
